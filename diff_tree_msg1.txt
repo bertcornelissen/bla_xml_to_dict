@@ -1,0 +1,25 @@
+root
+└── Message
+    ├── Message Header
+    │   └── [33mChanged[0m Message Sequence Number: {'new_value': '70', 'old_value': '69'}
+    ├── Message Body
+    │   ├── Terminal Group
+    │   │   ├── [33mChanged[0m Terminal Identifier: {'new_value': 'FC10M111', 'old_value': 'C10KA1␀␀'}
+    │   │   ├── [33mChanged[0m Terminal Certification Number: {'new_value': '00002042', 'old_value': '00002345'}
+    │   │   └── [33mChanged[0m Terminal Capabilities: {'new_value': 'E0F0C8', 'old_value': '60D8C8'}
+    │   ├── Terminal Security Group
+    │   │   ├── [33mChanged[0m Security Scheme TSC Identifier: {'new_value': '000000000625', 'old_value': '000000001918'}
+    │   │   ├── [33mChanged[0m Master Key Version: {'new_value': '06', 'old_value': '01'}
+    │   │   ├── [33mChanged[0m Key Load Number: {'new_value': 'CB50', 'old_value': 'C011'}
+    │   │   └── [33mChanged[0m Key Evolution Identifier: {'new_value': '09', 'old_value': '0101010106'}
+    │   └── Card Brand Table
+    │       └── Table Record
+    │           ├── [33mChanged[0m Merchant User Identifier: {'new_value': '0148232655␀␀␀␀␀', 'old_value': '4601355068␀␀␀␀␀'}
+    │           └── Contactless Mode Management
+    │               └── [33mChanged[0m Terminal Capabilities: {'new_value': 'E0F0C8', 'old_value': '60D8C8'}
+    └── Message Footer
+        ├── [33mChanged[0m Security Scheme TSC Identifier: {'new_value': '000000000625', 'old_value': '000000001918'}
+        ├── [33mChanged[0m Master Key Version: {'new_value': '06', 'old_value': '01'}
+        ├── [33mChanged[0m Key Load Number: {'new_value': 'CB50', 'old_value': 'C011'}
+        ├── [33mChanged[0m Key Evolution Identifier: {'new_value': '010101022C', 'old_value': '0101010106'}
+        └── [33mChanged[0m Message Authentication Code: {'new_value': '89C633F4', 'old_value': '8D138652'}

@@ -1,0 +1,56 @@
+root
+└── Message
+    ├── Message Body
+    │   ├── Terminal Group
+    │   │   ├── [32mAdded[0m Request for Action(s): 04000000
+    │   │   └── [33mChanged[0m Terminal Identifier: {'new_value': 'FC10M111', 'old_value': 'C10KA1␀␀'}
+    │   ├── Card Brand Table
+    │   │   └── Table Record
+    │   │       ├── [32mAdded[0m Transaction Receipt Options: 00
+    │   │       ├── Service Code Processing Options
+    │   │       │   ├── [32mAdded[0m Service Code List: FFF4
+    │   │       │   └── [33mChanged[0m Action Panel: {'new_value': '55555555555555555555555555555550', 'old_value': 
+    │   │       │       '66666666666666666666666666666660'}
+    │   │       ├── [31mRemoved[0m Merchant Account Numbers: {'Table Record': {'Account Label Name': 'Creditering AMEX', 
+    │   │       │   'Account Number': 'NL85RABO0350800480␀␀␀␀␀␀␀␀␀␀␀␀␀'}}
+    │   │       ├── [33mChanged[0m Card Brand Parameters Identifier: {'new_value': '00000001', 'old_value': '00000011'}
+    │   │       ├── [33mChanged[0m Merchant User Identifier: {'new_value': '0148232655␀␀␀␀␀', 'old_value': '4601355068␀␀␀␀␀'}
+    │   │       ├── [33mChanged[0m Allowed Services: {'new_value': 'BC40', 'old_value': 'FEC0'}
+    │   │       ├── [33mChanged[0m Cancellable Services: {'new_value': '0000', 'old_value': 'B040'}
+    │   │       ├── [33mChanged[0m Default Amount: {'new_value': '000000012500', 'old_value': '000000012700'}
+    │   │       ├── [33mChanged[0m Maximal Percentage Allowed for Extra: {'new_value': '00', 'old_value': '10'}
+    │   │       ├── [33mChanged[0m Manual-Entry Processing Options: {'new_value': '52', 'old_value': '5A'}
+    │   │       ├── [33mChanged[0m Card Data Security Requirements: {'new_value': 'CF80', 'old_value': '4F80'}
+    │   │       ├── [33mChanged[0m Clipping for PAN: {'new_value': '00000000000F20', 'old_value': '00000000000F00'}
+    │   │       ├── Card Brand Risk Management
+    │   │       │   ├── [33mChanged[0m Lower Consecutive Offline Limit: {'new_value': '00', 'old_value': '05'}
+    │   │       │   └── [33mChanged[0m Upper Consecutive Offline Limit: {'new_value': '00', 'old_value': '10'}
+    │   │       ├── [33mChanged[0m Cardholder Verification Modes: {'new_value': 'F4', 'old_value': 'E0'}
+    │   │       ├── [33mChanged[0m ICC EMV Management Support: {'new_value': '00000000', 'old_value': '01000000'}
+    │   │       └── Contactless Mode Management
+    │   │           ├── [33mChanged[0m Allowed Services: {'new_value': 'BC40', 'old_value': 'FEC0'}
+    │   │           └── [33mChanged[0m Terminal Contactless Transaction Limit ODC: {'new_value': '000000009000', 'old_value': 
+    │   │               '000009999999'}
+    │   ├── Acquirer Parameters Group
+    │   │   ├── [31mRemoved[0m Connection Data 2: {'Security Provider Identifier': '52800001', 'Time-Out for Answer': '45', 
+    │   │   │   'Number of Warm Retries': '02', 'Maximal Cold Message Delay': '0180', 'Host Name': '82.195.52.200', 
+    │   │   │   'Contact Port': 'C53E', 'Dual Address Mode': '00', 'Modem Standards': '4080'}
+    │   │   ├── [31mRemoved[0m Maximal Accumulation Number: 00
+    │   │   ├── [31mRemoved[0m Maximal Accumulation Time: 0010
+    │   │   ├── Connection Data
+    │   │   │   ├── [31mRemoved[0m Dual Address Mode: 00
+    │   │   │   ├── [31mRemoved[0m Modem Standards: 4080
+    │   │   │   ├── [33mChanged[0m Host Name: {'new_value': 'sp-ndt.ctap.worldline-solutions.com', 'old_value': 
+    │   │   │   │   '82.195.52.200'}
+    │   │   │   └── [33mChanged[0m Contact Port: {'new_value': '5EED', 'old_value': 'C53E'}
+    │   │   ├── [33mChanged[0m Acquirer Parameters Identifier: {'new_value': '00000001', 'old_value': '0000000B'}
+    │   │   ├── [33mChanged[0m Date For Update: {'new_value': '20260331030735', 'old_value': '20260312040413'}
+    │   │   ├── [33mChanged[0m Balance Mode: {'new_value': '00', 'old_value': '18'}
+    │   │   ├── [33mChanged[0m Optional Data Element Support: {'new_value': '00', 'old_value': '40'}
+    │   │   └── [33mChanged[0m Number of Sessions: {'new_value': '08', 'old_value': '20'}
+    │   └── Transaction Group
+    │       └── [33mChanged[0m Date and Time: {'new_value': '20260325170735', 'old_value': '20260311134213'}
+    ├── Message Header
+    │   └── [33mChanged[0m Message Sequence Number: {'new_value': '70', 'old_value': '69'}
+    └── Message Footer
+        └── [33mChanged[0m Message Authentication Code: {'new_value': 'D091C043', 'old_value': '450A520E'}

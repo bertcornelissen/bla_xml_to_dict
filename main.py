@@ -47,12 +47,19 @@ def xml_to_dict(path: Path) -> dict:
     return apply_field_transforms(data)
 
 
-def extract_msg(data: dict) -> dict:
-    """Navigate to the NET.cp.DE.MSG sub-dict inside the first OnlineMessage's FieldList."""
-    online_message = data["EMVCoL3OnlineMessageFormat"]["OnlineMessageList"]["OnlineMessage"]
-    if isinstance(online_message, list):
-        online_message = online_message[0]
-    return online_message["FieldList"]["Message"]
+def extract_all_msgs(data: dict) -> list[dict]:
+    """Return a list of (label, msg_dict) for every OnlineMessage that contains a MSG field."""
+    online_messages = data["EMVCoL3OnlineMessageFormat"]["OnlineMessageList"]["OnlineMessage"]
+    if isinstance(online_messages, dict):
+        online_messages = [online_messages]
+    result = []
+    for om in online_messages:
+        label = f"{om.get('@Class', '?')} ({om.get('@Source', '?')} -> {om.get('@Destination', '?')})"
+        field_list = om.get("FieldList") or {}
+        msg = field_list.get("Message")
+        if msg is not None:
+            result.append({"label": label, "msg": msg})
+    return result
 
 def insert_path(tree, path, value):
     node = tree
@@ -138,19 +145,36 @@ def tree_by_path_output(diff, output_file=None):
 
 
 def main():
-    iph = extract_msg(xml_to_dict(IPH_FILE))
-    wlpfo = extract_msg(xml_to_dict(WLPFO_FILE))
+    iph_msgs = extract_all_msgs(xml_to_dict(IPH_FILE))
+    wlpfo_msgs = extract_all_msgs(xml_to_dict(WLPFO_FILE))
 
-    diff = DeepDiff(iph, wlpfo, verbose_level=2)
-    if not diff:
-        print("The messages are equal.")
-    else:
-        print("The messages are not equal.")
-        print("Differences:")
-        print(diff.pretty())
+    pairs = list(zip(iph_msgs, wlpfo_msgs))
+    if not pairs:
+        print("No comparable messages found.")
+        return
 
-        print("\nDifferences as tree by path:")
-        tree_by_path_output(diff, output_file="diff_tree_output.txt")
+    for i, (iph_entry, wlpfo_entry) in enumerate(pairs):
+        print(f"\n{'='*60}")
+        print(f"Message {i+1}:")
+        print(f"  IPH:   {iph_entry['label']}")
+        print(f"  WLPFO: {wlpfo_entry['label']}")
+        print('='*60)
+
+        diff = DeepDiff(iph_entry["msg"], wlpfo_entry["msg"], verbose_level=2)
+        if not diff:
+            print("  (no differences)")
+        else:
+            print(diff.pretty())
+            print("\nDiff tree:")
+            tree_by_path_output(diff, output_file=f"diff_tree_msg{i+1}.txt")
+
+    if len(iph_msgs) != len(wlpfo_msgs):
+        extra_iph = iph_msgs[len(wlpfo_msgs):]
+        extra_wlpfo = wlpfo_msgs[len(iph_msgs):]
+        for e in extra_iph:
+            print(f"\n[IPH only] {e['label']}")
+        for e in extra_wlpfo:
+            print(f"\n[WLPFO only] {e['label']}")
 
 
 if __name__ == "__main__":
