@@ -1,0 +1,11 @@
+[project]
+name = "xml-to-dict"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.7"
+dependencies = [
+    "deepdiff>=8.6.2",
+    "rich>=14.3.3",
+    "xmltodict>=1.0.4",
+]
