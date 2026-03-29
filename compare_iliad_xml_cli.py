@@ -1,16 +1,10 @@
+import argparse
+import sys
 import xmltodict
 from deepdiff import DeepDiff
-from pprint import pprint
 from pathlib import Path
 import re
 
-
-# IPH_FILE = Path("IPH - CTAP10 PAR TERM C10KA1 - 1 BRAND_AMEX.emvco")
-# WLPFO_FILE = Path("WLPFO - CTAP10 PAR TERM FC10M111 - 1 BRAND_AMEX - WLPFO.emvco")
-# IPH_FILE = Path("IPH CTAP10_Sale.emvco")
-# WLPFO_FILE = Path("WLPFO CTAP10_Sale.emvco")
-IPH_FILE = Path("IPH_IFSF.xml")
-WLPFO_FILE = Path("WLPFO_IFSF.xml")
 
 TABLE_RECORD_NAME = "Table Record"
 
@@ -168,7 +162,6 @@ def tree_by_path_output(diff, output_file=None):
             file_console = Console(file=f, width=120, force_terminal=True, legacy_windows=False)
             file_console.print(rich_tree)
 
-# Load default fields to ignore during comparison from ignored_fields.txt
 def load_default_exclude_fields(file_path="ignored_fields.txt"):
     try:
         with open(file_path, "r") as f:
@@ -178,41 +171,83 @@ def load_default_exclude_fields(file_path="ignored_fields.txt"):
         return []
 
 def main():
-    iph_msgs = extract_all_msgs(xml_to_dict(Path("samples/ctap/par/IPH - CTAP10 PAR TERM C10KA1 - 1 BRAND_AMEX.emvco")))
-    wlpfo_msgs = extract_all_msgs(xml_to_dict(Path("samples/ctap/par/WLPFO - CTAP10 PAR TERM FC10M111 - 1 BRAND_AMEX - WLPFO.emvco")))
+    parser = argparse.ArgumentParser(
+        description="Compare two ILIAD XML files message by message and show differences.",
+    )
+    parser.add_argument("file_a", type=Path, metavar="FILE_A", help="First XML file (reference)")
+    parser.add_argument("file_b", type=Path, metavar="FILE_B", help="Second XML file (comparison)")
+    parser.add_argument(
+        "--ignore", "-i",
+        metavar="FIELD",
+        action="append",
+        default=[],
+        dest="extra_ignore",
+        help="Field name to ignore during comparison (may be repeated)",
+    )
+    parser.add_argument(
+        "--ignore-file",
+        metavar="FILE",
+        default="ignored_fields.txt",
+        help="File with field names to ignore, one per line (default: ignored_fields.txt)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        metavar="DIR",
+        type=Path,
+        default=Path("."),
+        help="Directory for diff_tree_msgN.txt output files (default: current directory)",
+    )
+    parser.add_argument(
+        "--ignore-order",
+        action="store_true",
+        default=False,
+        help="Ignore order differences in lists",
+    )
+    args = parser.parse_args()
 
-    # Determine which fields to exclude
-    exclude_fields = []
-    exclude_fields.extend(load_default_exclude_fields("ignored_fields.txt"))
-    exclude_paths = get_exclude_paths(exclude_fields) 
+    for p in (args.file_a, args.file_b):
+        if not p.exists():
+            print(f"Error: file not found: {p}", file=sys.stderr)
+            sys.exit(1)
 
-    pairs = list(zip(iph_msgs, wlpfo_msgs))
+    a_msgs = extract_all_msgs(xml_to_dict(args.file_a))
+    b_msgs = extract_all_msgs(xml_to_dict(args.file_b))
+
+    exclude_fields = load_default_exclude_fields(args.ignore_file) + args.extra_ignore
+    exclude_paths = get_exclude_paths(exclude_fields)
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    pairs = list(zip(a_msgs, b_msgs))
     if not pairs:
         print("No comparable messages found.")
         return
 
-    for i, (iph_entry, wlpfo_entry) in enumerate(pairs):
+    for i, (a_entry, b_entry) in enumerate(pairs):
         print(f"\n{'='*60}")
         print(f"Message {i+1}:")
-        print(f"  IPH:   {iph_entry['label']}")
-        print(f"  WLPFO: {wlpfo_entry['label']}")
+        print(f"  A: {a_entry['label']}")
+        print(f"  B: {b_entry['label']}")
         print('='*60)
 
-        diff = DeepDiff(iph_entry["msg"], wlpfo_entry["msg"], verbose_level=2, exclude_regex_paths=exclude_paths)
+        diff = DeepDiff(
+            a_entry["msg"], b_entry["msg"],
+            verbose_level=2,
+            exclude_regex_paths=exclude_paths,
+            ignore_order=args.ignore_order,
+        )
         if not diff:
             print("  (no differences)")
         else:
-            # print(diff.pretty())
             print("\nDiff tree:")
-            tree_by_path_output(diff, output_file=f"diff_tree_msg{i+1}.txt")
+            output_file = args.output_dir / f"diff_tree_msg{i+1}.txt"
+            tree_by_path_output(diff, output_file=str(output_file))
 
-    if len(iph_msgs) != len(wlpfo_msgs):
-        extra_iph = iph_msgs[len(wlpfo_msgs):]
-        extra_wlpfo = wlpfo_msgs[len(iph_msgs):]
-        for e in extra_iph:
-            print(f"\n[IPH only] {e['label']}")
-        for e in extra_wlpfo:
-            print(f"\n[WLPFO only] {e['label']}")
+    if len(a_msgs) != len(b_msgs):
+        for e in a_msgs[len(b_msgs):]:
+            print(f"\n[A only] {e['label']}")
+        for e in b_msgs[len(a_msgs):]:
+            print(f"\n[B only] {e['label']}")
 
 
 if __name__ == "__main__":
