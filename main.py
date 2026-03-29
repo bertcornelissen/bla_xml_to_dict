@@ -2,24 +2,36 @@ import xmltodict
 from deepdiff import DeepDiff
 from pprint import pprint
 from pathlib import Path
+import re
 
 
-IPH_FILE = Path("IPH - CTAP10 PAR TERM C10KA1 - 1 BRAND_AMEX.emvco")
-WLPFO_FILE = Path("WLPFO - CTAP10 PAR TERM FC10M111 - 1 BRAND_AMEX - WLPFO.emvco")
+# IPH_FILE = Path("IPH - CTAP10 PAR TERM C10KA1 - 1 BRAND_AMEX.emvco")
+# WLPFO_FILE = Path("WLPFO - CTAP10 PAR TERM FC10M111 - 1 BRAND_AMEX - WLPFO.emvco")
+# IPH_FILE = Path("IPH CTAP10_Sale.emvco")
+# WLPFO_FILE = Path("WLPFO CTAP10_Sale.emvco")
+IPH_FILE = Path("IPH_IFSF.xml")
+WLPFO_FILE = Path("WLPFO_IFSF.xml")
 
+TABLE_RECORD_NAME = "Table Record"
 
 def transform_fields(fields) -> dict:
     if not isinstance(fields, list):
         fields = [fields]
+    table_record_seq = 0
     result = {}
     for field in fields:
         name = field.get("FriendlyName", field["@ID"])
+        if name == TABLE_RECORD_NAME:
+            table_record_seq += 1
+            key = f"{name} {table_record_seq}"
+        else:
+            key = name
         child_list = field.get("FieldList")
         children = child_list.get("Field") if isinstance(child_list, dict) else None
         if children:
-            result[name] = transform_fields(children)
+            result[key] = transform_fields(children)
         else:
-            result[name] = field.get("FieldViewable")
+            result[key] = field.get("FieldViewable")
     return result
 
 
@@ -43,7 +55,7 @@ def apply_field_transforms(data):
 
 def xml_to_dict(path: Path) -> dict:
     with path.open("rb") as f:
-        data = xmltodict.parse(f)
+        data = xmltodict.parse(f, dict_constructor=dict)
     return apply_field_transforms(data)
 
 
@@ -56,10 +68,23 @@ def extract_all_msgs(data: dict) -> list[dict]:
     for om in online_messages:
         label = f"{om.get('@Class', '?')} ({om.get('@Source', '?')} -> {om.get('@Destination', '?')})"
         field_list = om.get("FieldList") or {}
-        msg = field_list.get("Message")
+        msg = field_list.get("Message") or (field_list if field_list else None)
         if msg is not None:
             result.append({"label": label, "msg": msg})
     return result
+
+def get_exclude_paths(exclude_fields):
+    """
+    Convert field names to regex patterns for DeepDiff exclude_paths.
+    This creates patterns that match the field at any level in the nested structure.
+    """
+    patterns = []
+    for field in exclude_fields:
+        # Match the field at any level: root['msg']['msg_body']['field_name']
+        # Using regex to match any path ending with the field name
+        pattern = re.compile(rf".*\['{field}'\]$")
+        patterns.append(pattern)
+    return patterns
 
 def insert_path(tree, path, value):
     node = tree
@@ -143,10 +168,23 @@ def tree_by_path_output(diff, output_file=None):
             file_console = Console(file=f, width=120, force_terminal=True, legacy_windows=False)
             file_console.print(rich_tree)
 
+# Load default fields to ignore during comparison from ignored_fields.txt
+def load_default_exclude_fields(file_path="ignored_fields.txt"):
+    try:
+        with open(file_path, "r") as f:
+            return [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+    except Exception as e:
+        print(f"Warning: Could not read {file_path}: {e}")
+        return []
 
 def main():
-    iph_msgs = extract_all_msgs(xml_to_dict(IPH_FILE))
-    wlpfo_msgs = extract_all_msgs(xml_to_dict(WLPFO_FILE))
+    iph_msgs = extract_all_msgs(xml_to_dict(Path("samples/ctap/par/IPH - CTAP10 PAR TERM C10KA1 - 1 BRAND_AMEX.emvco")))
+    wlpfo_msgs = extract_all_msgs(xml_to_dict(Path("samples/ctap/par/WLPFO - CTAP10 PAR TERM FC10M111 - 1 BRAND_AMEX - WLPFO.emvco")))
+
+    # Determine which fields to exclude
+    exclude_fields = []
+    exclude_fields.extend(load_default_exclude_fields("ignored_fields.txt"))
+    exclude_paths = get_exclude_paths(exclude_fields) 
 
     pairs = list(zip(iph_msgs, wlpfo_msgs))
     if not pairs:
@@ -160,11 +198,11 @@ def main():
         print(f"  WLPFO: {wlpfo_entry['label']}")
         print('='*60)
 
-        diff = DeepDiff(iph_entry["msg"], wlpfo_entry["msg"], verbose_level=2)
+        diff = DeepDiff(iph_entry["msg"], wlpfo_entry["msg"], verbose_level=2, exclude_regex_paths=exclude_paths)
         if not diff:
             print("  (no differences)")
         else:
-            print(diff.pretty())
+            # print(diff.pretty())
             print("\nDiff tree:")
             tree_by_path_output(diff, output_file=f"diff_tree_msg{i+1}.txt")
 

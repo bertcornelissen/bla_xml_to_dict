@@ -1094,8 +1094,8 @@
                                                                 <Field ID="NET.rp.DE.MSG.SE.F0.SF.E2.SF.FA.SF.FE.SF.EF.SF.5F2A">
                                                                     <FriendlyName>Transaction Currency Code</FriendlyName>
                                                                     <FieldType>TLV</FieldType>
-                                                                    <FieldViewable>0978</FieldViewable>
-                                                                    <FieldBinary>09 78</FieldBinary>
+                                                                    <FieldViewable>9999</FieldViewable>
+                                                                    <FieldBinary>99 99</FieldBinary>
                                                                     <FieldList/>
                                                                 </Field>
                                                                 <Field ID="NET.rp.DE.MSG.SE.F0.SF.E2.SF.FA.SF.FE.SF.EF.SF.5F36">
@@ -1114,6 +1114,19 @@
                                                             <FieldBinary>5F 2A 02 09 78 5F 36 01 02</FieldBinary>
                                                             <FieldList/>
                                                         </Field>
+                                                        <Field ID="NET.rp.DE.MSG.SE.F0.SF.E2.SF.FA.SF.FE.SF.EF">
+                                                            <FriendlyName>Table Record</FriendlyName>
+                                                            <FieldType>TLV</FieldType>
+                                                            <FieldViewable>5F2A0209785F360102</FieldViewable>
+                                                            <FieldBinary>5F 2A 02 09 78 5F 36 01 02</FieldBinary>
+                                                            <FieldList/>
+                                                        </Field>                                                         <Field ID="NET.rp.DE.MSG.SE.F0.SF.E2.SF.FA.SF.FE.SF.EF">
+                                                            <FriendlyName>Table Record</FriendlyName>
+                                                            <FieldType>TLV</FieldType>
+                                                            <FieldViewable>5F2A0209785F360102</FieldViewable>
+                                                            <FieldBinary>5F 2A 02 09 78 5F 36 01 02</FieldBinary>
+                                                            <FieldList/>
+                                                        </Field> 
                                                     </FieldList>
                                                 </Field>
                                                 <Field ID="NET.rp.DE.MSG.SE.F0.SF.E2.SF.FA.SF.DF78">

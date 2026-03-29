@@ -55,7 +55,7 @@ root
     │   │   └── [33mChanged[0m Number of Sessions: {'new_value': '08', 'old_value': '20'}
     │   └── Transaction Group
     │       └── [33mChanged[0m Date and Time: {'new_value': '20260325170735', 'old_value': '20260311134213'}
-    ├── Message Footer
-    │   └── [33mChanged[0m Message Authentication Code: {'new_value': 'D091C043', 'old_value': '450A520E'}
-    └── Message Header
-        └── [33mChanged[0m Message Sequence Number: {'new_value': '70', 'old_value': '69'}
+    ├── Message Header
+    │   └── [33mChanged[0m Message Sequence Number: {'new_value': '70', 'old_value': '69'}
+    └── Message Footer
+        └── [33mChanged[0m Message Authentication Code: {'new_value': 'D091C043', 'old_value': '450A520E'}

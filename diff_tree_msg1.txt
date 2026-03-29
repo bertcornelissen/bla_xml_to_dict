@@ -13,7 +13,7 @@ root
     │   │   ├── [33mChanged[0m Key Load Number: {'new_value': 'CB50', 'old_value': 'C011'}
     │   │   └── [33mChanged[0m Key Evolution Identifier: {'new_value': '09', 'old_value': '0101010106'}
     │   └── Card Brand Table
-    │       └── Table Record
+    │       └── Table Record 1
     │           ├── [33mChanged[0m Merchant User Identifier: {'new_value': '0148232655␀␀␀␀␀', 'old_value': '4601355068␀␀␀␀␀'}
     │           └── Contactless Mode Management
     │               └── [33mChanged[0m Terminal Capabilities: {'new_value': 'E0F0C8', 'old_value': '60D8C8'}

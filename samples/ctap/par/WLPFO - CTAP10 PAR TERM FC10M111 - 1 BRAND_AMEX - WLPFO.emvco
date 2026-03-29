@@ -851,7 +851,23 @@
                             <FieldType>TLV</FieldType>
                             <FieldViewable>E107D0027270D10170E2820224F1129F1C08464331304D313131DF110404000000F50FDF270720260325170735DF2E020000FA818ADF680400000001DF6B0400000001DF630720260331030735DF730103EE42DF82040452800001DF6E0145DF814B0102DF814C020180DF6F2373702D6E64742E637461702E776F726C646C696E652D736F6C7574696F6E732E636F6DDF70025EEDFE16EF095F2A0209785F360102EF099F3C0209789F3D0102DF780100DF814D0108DF81520100DF7C0108FB82016EEF82016ADF5F022004DF7F04000000019F160F303134383233323635350000000000DF2E0200009F150255419F530120DF814D0108DF81520140DF4F02BC40DF8101020000DF81020400000001DF817F06000000012500DF440100DF815401F0DF4201ECDF7D0152E91ADF814E1055555555555555555555555555555550DF814F02FFF4DF821D0180DF3E02CF80DF450700000000000F20ED36DF5C06000000000000DF5A0100DF4C0400000000DF4A04000000009F1B0400000000DF5B0100DF4B0100DF4D0100DF82360400000000DF3D01F4DF4E0103DF5D039F3704DF5E0F9F02065F2A029A039C0195059F3704DF57050000000000DF5805C800000000DF5605C800000000DF7B0400000000DF3F0101DF82380100BF0653DF4F02BC40DF3D014CDF822606000009999999DF822D06000000009000DF822706000000000000DF822806000000005000DF822906000000000000DF57050000000000DF5805C800000000DF5605C800000000E306CF04D091C043</FieldViewable>
                             <FieldBinary>E1 07 D0 02 72 70 D1 01 70 E2 82 02 24 F1 12 9F 1C 08 46 43 31 30 4D 31 31 31 DF 11 04 04 00 00 00 F5 0F DF 27 07 20 26 03 25 17 07 35 DF 2E 02 00 00 FA 81 8A DF 68 04 00 00 00 01 DF 6B 04 00 00 00 01 DF 63 07 20 26 03 31 03 07 35 DF 73 01 03 EE 42 DF 82 04 04 52 80 00 01 DF 6E 01 45 DF 81 4B 01 02 DF 81 4C 02 01 80 DF 6F 23 73 70 2D 6E 64 74 2E 63 74 61 70 2E 77 6F 72 6C 64 6C 69 6E 65 2D 73 6F 6C 75 74 69 6F 6E 73 2E 63 6F 6D DF 70 02 5E ED FE 16 EF 09 5F 2A 02 09 78 5F 36 01 02 EF 09 9F 3C 02 09 78 9F 3D 01 02 DF 78 01 00 DF 81 4D 01 08 DF 81 52 01 00 DF 7C 01 08 FB 82 01 6E EF 82 01 6A DF 5F 02 20 04 DF 7F 04 00 00 00 01 9F 16 0F 30 31 34 38 32 33 32 36 35 35 00 00 00 00 00 DF 2E 02 00 00 9F 15 02 55 41 9F 53 01 20 DF 81 4D 01 08 DF 81 52 01 40 DF 4F 02 BC 40 DF 81 01 02 00 00 DF 81 02 04 00 00 00 01 DF 81 7F 06 00 00 00 01 25 00 DF 44 01 00 DF 81 54 01 F0 DF 42 01 EC DF 7D 01 52 E9 1A DF 81 4E 10 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 50 DF 81 4F 02 FF F4 DF 82 1D 01 80 DF 3E 02 CF 80 DF 45 07 00 00 00 00 00 0F 20 ED 36 DF 5C 06 00 00 00 00 00 00 DF 5A 01 00 DF 4C 04 00 00 00 00 DF 4A 04 00 00 00 00 9F 1B 04 00 00 00 00 DF 5B 01 00 DF 4B 01 00 DF 4D 01 00 DF 82 36 04 00 00 00 00 DF 3D 01 F4 DF 4E 01 03 DF 5D 03 9F 37 04 DF 5E 0F 9F 02 06 5F 2A 02 9A 03 9C 01 95 05 9F 37 04 DF 57 05 00 00 00 00 00 DF 58 05 C8 00 00 00 00 DF 56 05 C8 00 00 00 00 DF 7B 04 00 00 00 00 DF 3F 01 01 DF 82 38 01 00 BF 06 53 DF 4F 02 BC 40 DF 3D 01 4C DF 82 26 06 00 00 09 99 99 99 DF 82 2D 06 00 00 00 00 90 00 DF 82 27 06 00 00 00 00 00 00 DF 82 28 06 00 00 00 00 50 00 DF 82 29 06 00 00 00 00 00 00 DF 57 05 00 00 00 00 00 DF 58 05 C8 00 00 00 00 DF 56 05 C8 00 00 00 00 E3 06 CF 04 D0 91 C0 43</FieldBinary>
+
                             <FieldList>
+                                <Field ID="NET.rp.DE.MSG.SE.F0.SF.E3">
+                                    <FriendlyName>Message Footer</FriendlyName>
+                                    <FieldType>TLV</FieldType>
+                                    <FieldViewable>CF04D091C043</FieldViewable>
+                                    <FieldBinary>CF 04 D0 91 C0 43</FieldBinary>
+                                    <FieldList>
+                                        <Field ID="NET.rp.DE.MSG.SE.F0.SF.E3.SF.CF">
+                                            <FriendlyName>Message Authentication Code</FriendlyName>
+                                            <FieldType>TLV</FieldType>
+                                            <FieldViewable>D091C043</FieldViewable>
+                                            <FieldBinary>D0 91 C0 43</FieldBinary>
+                                            <FieldList/>
+                                        </Field>
+                                    </FieldList>
+                                </Field>
                                 <Field ID="NET.rp.DE.MSG.SE.F0.SF.E1">
                                     <FriendlyName>Message Header</FriendlyName>
                                     <FieldType>TLV</FieldType>
@@ -1457,21 +1473,6 @@
                                                     </FieldList>
                                                 </Field>
                                             </FieldList>
-                                        </Field>
-                                    </FieldList>
-                                </Field>
-                                <Field ID="NET.rp.DE.MSG.SE.F0.SF.E3">
-                                    <FriendlyName>Message Footer</FriendlyName>
-                                    <FieldType>TLV</FieldType>
-                                    <FieldViewable>CF04D091C043</FieldViewable>
-                                    <FieldBinary>CF 04 D0 91 C0 43</FieldBinary>
-                                    <FieldList>
-                                        <Field ID="NET.rp.DE.MSG.SE.F0.SF.E3.SF.CF">
-                                            <FriendlyName>Message Authentication Code</FriendlyName>
-                                            <FieldType>TLV</FieldType>
-                                            <FieldViewable>D091C043</FieldViewable>
-                                            <FieldBinary>D0 91 C0 43</FieldBinary>
-                                            <FieldList/>
                                         </Field>
                                     </FieldList>
                                 </Field>
