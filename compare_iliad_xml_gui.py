@@ -315,6 +315,63 @@ def _build_txt_report(name_a: str, name_b: str, pairs: list, diffs: list) -> str
     return "\n".join(lines)
 
 
+def _render_raw_tree(tree: dict, lines: list, prefix: str = "", is_last: bool = True) -> None:
+    """Recursively render a diff tree as ASCII lines, matching the CLI Rich tree style."""
+    entries = list(tree.items())
+    for idx, (key, value) in enumerate(entries):
+        connector = "└── " if idx == len(entries) - 1 else "├── "
+        child_prefix = prefix + ("    " if idx == len(entries) - 1 else "│   ")
+        if isinstance(value, dict) and "type" in value:
+            change_type = value["type"]
+            change_value = value["value"]
+            _val = "" if isinstance(change_value, dict) else f": {change_value}"
+            if change_type == "values_changed":
+                tag = f"Changed {key}: {change_value}"
+            elif change_type == "dictionary_item_added":
+                tag = f"Added {key}{_val}"
+            elif change_type == "dictionary_item_removed":
+                tag = f"Removed {key}{_val}"
+            elif change_type == "iterable_item_added":
+                tag = f"Added (list) {key}{_val}"
+            elif change_type == "iterable_item_removed":
+                tag = f"Removed (list) {key}{_val}"
+            else:
+                tag = f"{change_type} {key}{_val}"
+            lines.append(f"{prefix}{connector}{tag}")
+        elif isinstance(value, dict):
+            lines.append(f"{prefix}{connector}{key}")
+            _render_raw_tree(value, lines, child_prefix)
+        else:
+            lines.append(f"{prefix}{connector}{key}: {value}")
+
+
+def _build_raw_report(name_a: str, name_b: str, pairs: list, diffs: list) -> str:
+    """Build a plain-text tree report matching the CLI output style."""
+    from datetime import date
+    n_changed = sum(1 for d in diffs if d)
+    n_identical = len(pairs) - n_changed
+    lines = [
+        "ILIAD XML Diff Report (raw)",
+        "=" * 60,
+        f"A    : {name_a}",
+        f"B    : {name_b}",
+        f"Date : {date.today()}",
+        f"Messages compared: {len(pairs)}  |  With differences: {n_changed}  |  Identical: {n_identical}",
+        "",
+    ]
+    for i, ((a_entry, b_entry), diff) in enumerate(zip(pairs, diffs)):
+        lines.append("=" * 60)
+        lines.append(f"Message {i + 1}: {a_entry['label']}")
+        if not diff:
+            lines.append("  No differences.")
+        else:
+            diff_tree = build_diff_tree(diff)
+            lines.append("root")
+            _render_raw_tree(diff_tree, lines)
+        lines.append("")
+    return "\n".join(lines)
+
+
 # ── UI ───────────────────────────────────────────────────────────────────────
 
 st.set_page_config(page_title="ILIAD XML Compare", page_icon="🔍", layout="wide")
@@ -387,7 +444,7 @@ m1.metric("Messages compared", len(pairs))
 m2.metric("With differences", n_changed)
 m3.metric("Identical", n_identical)
 
-tab_html, tab_txt = st.tabs(["⬇ HTML report", "⬇ TXT report"])
+tab_html, tab_txt, tab_raw = st.tabs(["⬇ HTML report", "⬇ TXT report", "⬇ Raw report"])
 with tab_html:
     rdata = _build_html_report(upload_a.name, upload_b.name, pairs, diffs).encode("utf-8")
     st.download_button(
@@ -402,6 +459,14 @@ with tab_txt:
         label="Download TXT report",
         data=rdata,
         file_name="diff_report.txt",
+        mime="text/plain",
+    )
+with tab_raw:
+    rdata = _build_raw_report(upload_a.name, upload_b.name, pairs, diffs).encode("utf-8")
+    st.download_button(
+        label="Download Raw report",
+        data=rdata,
+        file_name="diff_report_raw.txt",
         mime="text/plain",
     )
 st.divider()
