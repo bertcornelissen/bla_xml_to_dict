@@ -224,19 +224,30 @@ st.set_page_config(page_title="ILIAD XML Compare", page_icon="🔍", layout="wid
 st.title("🔍 ILIAD XML Compare")
 
 # ── Sidebar: settings ───────────────────────────────────────────────────────
+if "ignored_fields_text" not in st.session_state:
+    st.session_state["ignored_fields_text"] = "\n".join(load_default_exclude_fields("ignored_fields.txt"))
+
 with st.sidebar:
     st.header("Settings")
 
-    ignore_order = st.checkbox("Ignore list order", value=False)
-
-    default_excludes = load_default_exclude_fields("ignored_fields.txt")
-    exclude_text = st.text_area(
-        "Fields to ignore (one per line)",
-        value="\n".join(default_excludes),
+    st.subheader("Fields to ignore")
+    col_refresh, col_save = st.columns(2)
+    with col_refresh:
+        if st.button("↺ Refresh", help="Reload ignored fields from ignored_fields.txt"):
+            st.session_state["ignored_fields_text"] = "\n".join(load_default_exclude_fields("ignored_fields.txt"))
+    with col_save:
+        if st.button("💾 Save", help="Write current fields back to ignored_fields.txt"):
+            lines = [l.strip() for l in st.session_state["ignored_fields_text"].splitlines() if l.strip()]
+            with open("ignored_fields.txt", "w", encoding="utf-8") as _f:
+                _f.write("\n".join(lines) + "\n")
+            st.toast("Saved to ignored_fields.txt", icon="💾")
+    st.text_area(
+        "One field per line",
+        key="ignored_fields_text",
         height=160,
         help="Field names that will be excluded from the comparison.",
     )
-    extra_excludes = [l.strip() for l in exclude_text.splitlines() if l.strip() and not l.strip().startswith("#")]
+    extra_excludes = [l.strip() for l in st.session_state["ignored_fields_text"].splitlines() if l.strip() and not l.strip().startswith("#")]
 
 
 
@@ -277,7 +288,6 @@ for a_entry, b_entry in pairs:
         a_entry["msg"], b_entry["msg"],
         verbose_level=2,
         exclude_regex_paths=exclude_paths,
-        ignore_order=ignore_order,
     )
     diffs.append(d)
 
