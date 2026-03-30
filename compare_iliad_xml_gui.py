@@ -3,126 +3,23 @@ Streamlit GUI for compare_iliad_xml — upload two ILIAD XML files and view
 the message-by-message diff interactively.
 """
 import html as _html
-import re
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-import xmltodict
 from deepdiff import DeepDiff
 
-# ── shared core (duplicated from compare_iliad_xml_cli.py) ──────────────────
-
-TABLE_RECORD_NAME = "Table Record"
-
-
-def transform_fields(fields) -> dict:
-    if not isinstance(fields, list):
-        fields = [fields]
-    table_record_seq = 0
-    result = {}
-    for field in fields:
-        name = field.get("FriendlyName", field["@ID"])
-        if name == TABLE_RECORD_NAME:
-            table_record_seq += 1
-            key = f"{name} {table_record_seq}"
-        else:
-            key = name
-        child_list = field.get("FieldList")
-        children = child_list.get("Field") if isinstance(child_list, dict) else None
-        if children:
-            result[key] = transform_fields(children)
-        else:
-            result[key] = field.get("FieldViewable")
-    return result
-
-
-def apply_field_transforms(data):
-    if isinstance(data, dict):
-        result = {}
-        for key, value in data.items():
-            if key == "FieldList" and isinstance(value, dict) and "Field" in value:
-                result[key] = transform_fields(value["Field"])
-            elif isinstance(value, (dict, list)):
-                result[key] = apply_field_transforms(value)
-            else:
-                result[key] = value
-        return result
-    elif isinstance(data, list):
-        return [apply_field_transforms(item) for item in data]
-    return data
-
-
-def xml_to_dict_bytes(data: bytes) -> dict:
-    return apply_field_transforms(xmltodict.parse(data, dict_constructor=dict))
-
-
-def extract_all_msgs(data: dict) -> list[dict]:
-    online_messages = data["EMVCoL3OnlineMessageFormat"]["OnlineMessageList"]["OnlineMessage"]
-    if isinstance(online_messages, dict):
-        online_messages = [online_messages]
-    result = []
-    for om in online_messages:
-        label = f"{om.get('@Class', '?')} ({om.get('@Source', '?')} -> {om.get('@Destination', '?')})"
-        field_list = om.get("FieldList") or {}
-        msg = field_list.get("Message") or (field_list if field_list else None)
-        if msg is not None:
-            result.append({"label": label, "msg": msg})
-    return result
-
-
-def get_exclude_paths(exclude_fields: list[str]):
-    return [re.compile(rf".*\['{re.escape(f)}'\]$") for f in exclude_fields]
-
-
-def parse_path(path_str: str) -> list[str]:
-    parts, current, in_bracket = [], "", False
-    for c in path_str:
-        if c == "[":
-            in_bracket = True
-            current = ""
-        elif c == "]":
-            in_bracket = False
-            parts.append(current.strip("'"))
-        elif in_bracket:
-            current += c
-    return parts
-
-
-def insert_path(tree: dict, path: list[str], value):
-    node = tree
-    for part in path[:-1]:
-        if part not in node:
-            node[part] = {}
-        node = node[part]
-    node[path[-1]] = value
-
-
-def build_diff_tree(diff) -> dict:
-    diff_tree: dict = {}
-    for change_type, changes in diff.items():
-        if isinstance(changes, dict):
-            for path_str, value in changes.items():
-                path = parse_path(path_str)
-                if path:
-                    insert_path(diff_tree, path, {"type": change_type, "value": value})
-        else:
-            for path_str in changes:
-                path = parse_path(str(path_str))
-                if path:
-                    insert_path(diff_tree, path, {"type": change_type, "value": str(path_str)})
-    return diff_tree
-
+from iliad_core import (
+    CHANGE_LABELS,
+    build_diff_tree,
+    extract_all_msgs,
+    flatten_diff_tree,
+    format_change_label,
+    get_exclude_paths,
+    load_default_exclude_fields,
+    xml_to_dict_bytes,
+)
 
 # ── Streamlit rendering ──────────────────────────────────────────────────────
-
-CHANGE_LABELS = {
-    "values_changed":          "Changed",
-    "dictionary_item_added":   "Added",
-    "dictionary_item_removed": "Removed",
-    "iterable_item_added":     "Added (list)",
-    "iterable_item_removed":   "Removed (list)",
-}
 
 # Row background colours used by both the DataFrame styler and the legend
 _green_soft  = 'background-color: rgba(46,204,113,0.72)'
@@ -137,35 +34,6 @@ _ROW_STYLE: dict[str, str] = {
     "Removed (list)": _red_soft,
 }
 
-def flatten_diff_tree(tree: dict, path_prefix: str = "") -> list[dict]:
-    """Flatten the nested diff-tree into a list of table rows."""
-    rows: list[dict] = []
-    for key, value in tree.items():
-        path = f"{path_prefix} › {key}" if path_prefix else key
-        if isinstance(value, dict) and "type" in value:
-            change_type = value["type"]
-            change_value = value["value"]
-            label = CHANGE_LABELS.get(change_type, change_type)
-            if change_type == "values_changed" and isinstance(change_value, dict):
-                rows.append({
-                    "Field": path,
-                    "Change": label,
-                    "Old value": str(change_value.get("old_value", "")),
-                    "New value": str(change_value.get("new_value", "")),
-                })
-            elif change_type in ("dictionary_item_removed", "iterable_item_removed"):
-                old_val = "—" if isinstance(change_value, dict) else str(change_value)
-                rows.append({"Field": path, "Change": label,
-                             "Old value": old_val, "New value": "—"})
-            else:
-                new_val = "—" if isinstance(change_value, dict) else str(change_value)
-                rows.append({"Field": path, "Change": label,
-                             "Old value": "—", "New value": new_val})
-        elif isinstance(value, dict):
-            rows.extend(flatten_diff_tree(value, path))
-    return rows
-
-
 def _style_row(row: pd.Series) -> list[str]:
     style = _ROW_STYLE.get(row["Change"], "")
     return [style] * len(row)
@@ -178,14 +46,6 @@ def render_diff_as_table(diff_tree: dict) -> None:
     df = pd.DataFrame(rows, columns=["Field", "Change", "Old value", "New value"])
     styled = df.style.apply(_style_row, axis=1)
     st.dataframe(styled, width='stretch', hide_index=True)
-
-
-def load_default_exclude_fields(file_path: str = "ignored_fields.txt") -> list[str]:
-    try:
-        with open(file_path) as f:
-            return [l.strip() for l in f if l.strip() and not l.strip().startswith("#")]
-    except OSError:
-        return []
 
 
 def _diff_table_html(diff_tree: dict) -> str:
@@ -315,28 +175,14 @@ def _build_txt_report(name_a: str, name_b: str, pairs: list, diffs: list) -> str
     return "\n".join(lines)
 
 
-def _render_raw_tree(tree: dict, lines: list, prefix: str = "", is_last: bool = True) -> None:
+def _render_raw_tree(tree: dict, lines: list, prefix: str = "") -> None:
     """Recursively render a diff tree as ASCII lines, matching the CLI Rich tree style."""
     entries = list(tree.items())
     for idx, (key, value) in enumerate(entries):
         connector = "└── " if idx == len(entries) - 1 else "├── "
         child_prefix = prefix + ("    " if idx == len(entries) - 1 else "│   ")
         if isinstance(value, dict) and "type" in value:
-            change_type = value["type"]
-            change_value = value["value"]
-            _val = "" if isinstance(change_value, dict) else f": {change_value}"
-            if change_type == "values_changed":
-                tag = f"Changed {key}: {change_value}"
-            elif change_type == "dictionary_item_added":
-                tag = f"Added {key}{_val}"
-            elif change_type == "dictionary_item_removed":
-                tag = f"Removed {key}{_val}"
-            elif change_type == "iterable_item_added":
-                tag = f"Added (list) {key}{_val}"
-            elif change_type == "iterable_item_removed":
-                tag = f"Removed (list) {key}{_val}"
-            else:
-                tag = f"{change_type} {key}{_val}"
+            tag = format_change_label(value["type"], key, value["value"])
             lines.append(f"{prefix}{connector}{tag}")
         elif isinstance(value, dict):
             lines.append(f"{prefix}{connector}{key}")
