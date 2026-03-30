@@ -11,8 +11,7 @@ root
     │   │       │   ├── [32mAdded[0m Service Code List: FFF4
     │   │       │   └── [33mChanged[0m Action Panel: {'new_value': '55555555555555555555555555555550', 'old_value': 
     │   │       │       '66666666666666666666666666666660'}
-    │   │       ├── [31mRemoved[0m Merchant Account Numbers: {'Table Record 1': {'Account Label Name': 'Creditering AMEX', 
-    │   │       │   'Account Number': 'NL85RABO0350800480␀␀␀␀␀␀␀␀␀␀␀␀␀'}}
+    │   │       ├── [31mRemoved[0m Merchant Account Numbers
     │   │       ├── [33mChanged[0m Card Brand Parameters Identifier: {'new_value': '00000001', 'old_value': '00000011'}
     │   │       ├── [33mChanged[0m Merchant User Identifier: {'new_value': '0148232655␀␀␀␀␀', 'old_value': '4601355068␀␀␀␀␀'}
     │   │       ├── [33mChanged[0m Allowed Services: {'new_value': 'BC40', 'old_value': 'FEC0'}
@@ -32,9 +31,7 @@ root
     │   │           └── [33mChanged[0m Terminal Contactless Transaction Limit ODC: {'new_value': '000000009000', 'old_value': 
     │   │               '000009999999'}
     │   ├── Acquirer Parameters Group
-    │   │   ├── [31mRemoved[0m Connection Data 2: {'Security Provider Identifier': '52800001', 'Time-Out for Answer': '45', 
-    │   │   │   'Number of Warm Retries': '02', 'Maximal Cold Message Delay': '0180', 'Host Name': '82.195.52.200', 
-    │   │   │   'Contact Port': 'C53E', 'Dual Address Mode': '00', 'Modem Standards': '4080'}
+    │   │   ├── [31mRemoved[0m Connection Data 2
     │   │   ├── [31mRemoved[0m Maximal Accumulation Number: 00
     │   │   ├── [31mRemoved[0m Maximal Accumulation Time: 0010
     │   │   ├── Connection Data

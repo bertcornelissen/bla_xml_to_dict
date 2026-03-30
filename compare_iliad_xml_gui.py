@@ -153,11 +153,13 @@ def flatten_diff_tree(tree: dict, path_prefix: str = "") -> list[dict]:
                     "New value": str(change_value.get("new_value", "")),
                 })
             elif change_type in ("dictionary_item_removed", "iterable_item_removed"):
+                old_val = "—" if isinstance(change_value, dict) else str(change_value)
                 rows.append({"Field": path, "Change": label,
-                             "Old value": str(change_value), "New value": "—"})
+                             "Old value": old_val, "New value": "—"})
             else:
+                new_val = "—" if isinstance(change_value, dict) else str(change_value)
                 rows.append({"Field": path, "Change": label,
-                             "Old value": "—", "New value": str(change_value)})
+                             "Old value": "—", "New value": new_val})
         elif isinstance(value, dict):
             rows.extend(flatten_diff_tree(value, path))
     return rows

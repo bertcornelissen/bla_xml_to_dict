@@ -111,18 +111,19 @@ def render_diff_tree(tree, rich_tree):
             change_value = value['value']
             
             # Format based on change type
+            _val = "" if isinstance(change_value, dict) else f": {change_value}"
             if change_type == 'values_changed':
                 label = f"[yellow]Changed[/yellow] {key}: {change_value}"
             elif change_type == 'dictionary_item_added':
-                label = f"[green]Added[/green] {key}: {change_value}"
+                label = f"[green]Added[/green] {key}{_val}"
             elif change_type == 'dictionary_item_removed':
-                label = f"[red]Removed[/red] {key}: {change_value}"
+                label = f"[red]Removed[/red] {key}{_val}"
             elif change_type == 'iterable_item_added':
-                label = f"[green]Added (list)[/green] {key}: {change_value}"
+                label = f"[green]Added (list)[/green] {key}{_val}"
             elif change_type == 'iterable_item_removed':
-                label = f"[red]Removed (list)[/red] {key}: {change_value}"
+                label = f"[red]Removed (list)[/red] {key}{_val}"
             else:
-                label = f"[{change_type}] {key}: {change_value}"
+                label = f"[{change_type}] {key}{_val}"
             
             rich_tree.add(label)
         elif isinstance(value, dict):
