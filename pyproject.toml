@@ -7,5 +7,6 @@ requires-python = ">=3.13.7"
 dependencies = [
     "deepdiff>=8.6.2",
     "rich>=14.3.3",
+    "streamlit>=1.55.0",
     "xmltodict>=1.0.4",
 ]
