@@ -2,6 +2,7 @@
 Streamlit GUI for compare_iliad_xml — upload two ILIAD XML files and view
 the message-by-message diff interactively.
 """
+import html as _html
 import re
 from pathlib import Path
 
@@ -187,6 +188,133 @@ def load_default_exclude_fields(file_path: str = "ignored_fields.txt") -> list[s
         return []
 
 
+def _diff_table_html(diff_tree: dict) -> str:
+    """Return an HTML <table> string for the given diff tree (used in report)."""
+    rows = flatten_diff_tree(diff_tree)
+    if not rows:
+        return "<p><em>No differences.</em></p>"
+    th = 'style="padding:6px 10px;text-align:left;border-bottom:2px solid #ccc;font-weight:600"'
+    td = 'style="padding:5px 10px;word-break:break-word"'
+    out = ['<table style="width:100%;border-collapse:collapse;font-size:0.875em">']
+    out.append(f'<thead><tr><th {th}>Field</th><th {th}>Change</th>'
+               f'<th {th}>Old value</th><th {th}>New value</th></tr></thead><tbody>')
+    for row in rows:
+        bg = _ROW_STYLE.get(row["Change"], "")
+        tr_style = f'style="{bg}"' if bg else ""
+        out.append(f'<tr {tr_style}>')
+        for col in ("Field", "Change", "Old value", "New value"):
+            out.append(f'<td {td}>{_html.escape(str(row.get(col, "")))}</td>')
+        out.append("</tr>")
+    out.append("</tbody></table>")
+    return "\n".join(out)
+
+
+def _build_html_report(name_a: str, name_b: str, pairs: list, diffs: list) -> str:
+    """Build a self-contained HTML report of all diffs."""
+    from datetime import date
+    n_changed = sum(1 for d in diffs if d)
+    n_identical = len(pairs) - n_changed
+    sections = []
+    for i, ((a_entry, b_entry), diff) in enumerate(zip(pairs, diffs)):
+        header = _html.escape(f"Message {i + 1}: {a_entry['label']}")
+        if not diff:
+            sections.append(f'<h3>{header}</h3><p style="color:green">✅ No differences.</p>')
+        else:
+            n_changes = sum(
+                len(v) if isinstance(v, dict) else len(list(v)) for v in diff.values()
+            )
+            table = _diff_table_html(build_diff_tree(diff))
+            sections.append(
+                f'<h3>{header} — {n_changes} change(s)</h3>'
+                f'<p style="font-size:0.85em;color:#555">'
+                f'A: {_html.escape(a_entry["label"])} &nbsp;|&nbsp; '
+                f'B: {_html.escape(b_entry["label"])}</p>'
+                + table
+            )
+    body = "\n<hr>\n".join(sections)
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ILIAD XML Diff Report</title>
+<style>
+  body {{ font-family: sans-serif; margin: 2em; color: #222; }}
+  h1   {{ font-size: 1.4em; }}
+  h3   {{ font-size: 1.05em; margin-top: 1.5em; }}
+  hr   {{ border: none; border-top: 1px solid #ddd; margin: 1.5em 0; }}
+  table {{ border-collapse: collapse; width: 100%; font-size: 0.875em; margin-bottom: 1em; }}
+  th, td {{ padding: 5px 10px; text-align: left; }}
+  thead th {{ border-bottom: 2px solid #ccc; font-weight: 600; }}
+</style>
+</head>
+<body>
+<h1>ILIAD XML Diff Report</h1>
+<p>
+  <strong>A:</strong> {_html.escape(name_a)}<br>
+  <strong>B:</strong> {_html.escape(name_b)}<br>
+  <strong>Date:</strong> {date.today()}<br>
+  Messages compared: {len(pairs)} &nbsp;|&nbsp;
+  With differences: {n_changed} &nbsp;|&nbsp;
+  Identical: {n_identical}
+</p>
+<hr>
+{body}
+</body>
+</html>"""
+
+
+def _build_txt_report(name_a: str, name_b: str, pairs: list, diffs: list) -> str:
+    """Build a plain-text report of all diffs."""
+    from datetime import date
+    COL = {"Field": 120, "Change": 16, "Old value": 30, "New value": 30}
+    SEP = "-" * (sum(COL.values()) + len(COL) * 3 + 1)
+
+    def _fmt_row(row: dict) -> str:
+        return (
+            f"| {row['Field']:<{COL['Field']}} "
+            f"| {row['Change']:<{COL['Change']}} "
+            f"| {row['Old value']:<{COL['Old value']}} "
+            f"| {row['New value']:<{COL['New value']}} |"
+        )
+
+    n_changed = sum(1 for d in diffs if d)
+    n_identical = len(pairs) - n_changed
+    lines = [
+        "ILIAD XML Diff Report",
+        "=" * 60,
+        f"A    : {name_a}",
+        f"B    : {name_b}",
+        f"Date : {date.today()}",
+        f"Messages compared: {len(pairs)}  |  With differences: {n_changed}  |  Identical: {n_identical}",
+        "",
+    ]
+    for i, ((a_entry, b_entry), diff) in enumerate(zip(pairs, diffs)):
+        lines.append("=" * 60)
+        lines.append(f"Message {i + 1}: {a_entry['label']}")
+        if not diff:
+            lines.append("  No differences.")
+        else:
+            n_changes = sum(
+                len(v) if isinstance(v, dict) else len(list(v)) for v in diff.values()
+            )
+            lines.append(f"  {n_changes} change(s)")
+            rows = flatten_diff_tree(build_diff_tree(diff))
+            if rows:
+                header = _fmt_row({"Field": "Field", "Change": "Change",
+                                   "Old value": "Old value", "New value": "New value"})
+                lines += [SEP, header, SEP]
+                for row in rows:
+                    # Truncate long values so columns stay readable
+                    tr = {k: (v[:v_len - 1] + "…" if len(v) > v_len else v)
+                          for (k, v_len), v in zip(COL.items(), [
+                              row["Field"], row["Change"], row["Old value"], row["New value"]
+                          ])}
+                    lines.append(_fmt_row(tr))
+                lines.append(SEP)
+        lines.append("")
+    return "\n".join(lines)
+
+
 # ── UI ───────────────────────────────────────────────────────────────────────
 
 st.set_page_config(page_title="ILIAD XML Compare", page_icon="🔍", layout="wide")
@@ -207,14 +335,7 @@ with st.sidebar:
     )
     extra_excludes = [l.strip() for l in exclude_text.splitlines() if l.strip() and not l.strip().startswith("#")]
 
-    st.divider()
-    st.subheader("Legend")
-    for label, style in _ROW_STYLE.items():
-        st.markdown(
-            f'<span style="{style};padding:2px 8px;'
-            f'border-radius:4px;font-size:0.85em">{label}</span>',
-            unsafe_allow_html=True,
-        )
+
 
 # ── File upload ──────────────────────────────────────────────────────────────
 col_a, col_b = st.columns(2)
@@ -265,6 +386,24 @@ m1, m2, m3 = st.columns(3)
 m1.metric("Messages compared", len(pairs))
 m2.metric("With differences", n_changed)
 m3.metric("Identical", n_identical)
+
+tab_html, tab_txt = st.tabs(["⬇ HTML report", "⬇ TXT report"])
+with tab_html:
+    rdata = _build_html_report(upload_a.name, upload_b.name, pairs, diffs).encode("utf-8")
+    st.download_button(
+        label="Download HTML report",
+        data=rdata,
+        file_name="diff_report.html",
+        mime="text/html",
+    )
+with tab_txt:
+    rdata = _build_txt_report(upload_a.name, upload_b.name, pairs, diffs).encode("utf-8")
+    st.download_button(
+        label="Download TXT report",
+        data=rdata,
+        file_name="diff_report.txt",
+        mime="text/plain",
+    )
 st.divider()
 
 # ── Extra messages ───────────────────────────────────────────────────────────
