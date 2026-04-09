@@ -7,7 +7,7 @@ REM ==========================================
 
 REM --- %~dp0 is the directory where this batch file is located ---
 SET APP_DIR=%~dp0
-SET APP_FILE=compare_iliad_xml.py
+SET APP_FILE=compare_iliad_xml_gui.py
 
 REM Local venv per user
 SET VENV_DIR=%LOCALAPPDATA%\compare_iliad_xml_venv
