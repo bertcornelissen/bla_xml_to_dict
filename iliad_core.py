@@ -68,6 +68,27 @@ def xml_to_dict_bytes(data: bytes) -> dict:
     return apply_field_transforms(xmltodict.parse(data, dict_constructor=dict))
 
 
+def _extract_tags_recursive(node: object, tag_map: dict) -> None:
+    if isinstance(node, dict):
+        if "@ID" in node:
+            tag = node["@ID"]
+            name = node.get("FriendlyName", tag)
+            tag_map[name] = tag
+        for value in node.values():
+            _extract_tags_recursive(value, tag_map)
+    elif isinstance(node, list):
+        for item in node:
+            _extract_tags_recursive(item, tag_map)
+
+
+def xml_to_tag_map(data: bytes) -> dict:
+    """Return a flat {FriendlyName: @ID} mapping for every Field in the XML."""
+    raw = xmltodict.parse(data, dict_constructor=dict)
+    tag_map: dict = {}
+    _extract_tags_recursive(raw, tag_map)
+    return tag_map
+
+
 def extract_all_msgs(data: dict) -> list[dict]:
     online_messages = data["EMVCoL3OnlineMessageFormat"]["OnlineMessageList"]["OnlineMessage"]
     if isinstance(online_messages, dict):
@@ -126,7 +147,7 @@ def build_diff_tree(diff) -> dict:
     return diff_tree
 
 
-def flatten_diff_tree(tree: dict, path_prefix: str = "") -> list[dict]:
+def flatten_diff_tree(tree: dict, path_prefix: str = "", tag_map: dict | None = None) -> list[dict]:
     """Flatten the nested diff-tree into a list of table rows."""
     rows: list[dict] = []
     for key, value in tree.items():
@@ -135,23 +156,26 @@ def flatten_diff_tree(tree: dict, path_prefix: str = "") -> list[dict]:
             change_type = value["type"]
             change_value = value["value"]
             label = CHANGE_LABELS.get(change_type, change_type)
+            raw_tag = tag_map.get(key, "") if tag_map else ""
+            tag = raw_tag.rsplit(".", 1)[-1] if raw_tag else ""
             if change_type == "values_changed" and isinstance(change_value, dict):
                 rows.append({
                     "Field": path,
+                    "Tag": tag,
                     "Change": label,
                     "Old value": str(change_value.get("old_value", "")),
                     "New value": str(change_value.get("new_value", "")),
                 })
             elif change_type in ("dictionary_item_removed", "iterable_item_removed"):
                 old_val = "—" if isinstance(change_value, dict) else str(change_value)
-                rows.append({"Field": path, "Change": label,
+                rows.append({"Field": path, "Tag": tag, "Change": label,
                              "Old value": old_val, "New value": "—"})
             else:
                 new_val = "—" if isinstance(change_value, dict) else str(change_value)
-                rows.append({"Field": path, "Change": label,
+                rows.append({"Field": path, "Tag": tag, "Change": label,
                              "Old value": "—", "New value": new_val})
         elif isinstance(value, dict):
-            rows.extend(flatten_diff_tree(value, path))
+            rows.extend(flatten_diff_tree(value, path, tag_map))
     return rows
 
 
