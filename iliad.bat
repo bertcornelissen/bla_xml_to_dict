@@ -10,7 +10,7 @@ SET APP_DIR=%~dp0
 SET APP_FILE=compare_iliad_xml_gui.py
 
 REM Local venv per user
-SET VENV_DIR=%LOCALAPPDATA%\compare_iliad_xml_venv
+SET VENV_DIR=%LOCALAPPDATA%\bla_xml_to_dict_venv
 
 REM Environment hardening
 SET PYTHONDONTWRITEBYTECODE=1
