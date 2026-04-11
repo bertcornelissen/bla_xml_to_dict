@@ -17,7 +17,7 @@ from iliad_core import (
     get_exclude_paths,
     load_default_exclude_fields,
     xml_to_dict_bytes,
-    xml_to_tag_map,
+    xml_to_raw_dict_bytes,
 )
 
 # ── Streamlit rendering ──────────────────────────────────────────────────────
@@ -44,9 +44,10 @@ def render_diff_as_table(diff_tree: dict, tag_map: dict | None = None) -> None:
     rows = flatten_diff_tree(diff_tree, tag_map=tag_map)
     if not rows:
         return
-    df = pd.DataFrame(rows, columns=["Field", "Tag", "Change", "Old value", "New value"])
+    cols = ["Field", "Field ID", "Tag", "Change", "Old value", "New value"]
+    df = pd.DataFrame(rows, columns=cols)
     styled = df.style.apply(_style_row, axis=1)
-    st.dataframe(styled, width='stretch', hide_index=True)
+    st.dataframe(styled, width='stretch', hide_index=True, column_order=["Field", "Tag", "Change", "Old value", "New value"])
 
 
 def _diff_table_html(diff_tree: dict, tag_map: dict | None = None) -> str:
@@ -70,7 +71,7 @@ def _diff_table_html(diff_tree: dict, tag_map: dict | None = None) -> str:
     return "\n".join(out)
 
 
-def _build_html_report(name_a: str, name_b: str, pairs: list, diffs: list, tag_map: dict | None = None) -> str:
+def _build_html_report(name_a: str, name_b: str, pairs: list, diffs: list) -> str:
     """Build a self-contained HTML report of all diffs."""
     from datetime import date
     n_changed = sum(1 for d in diffs if d)
@@ -84,7 +85,8 @@ def _build_html_report(name_a: str, name_b: str, pairs: list, diffs: list, tag_m
             n_changes = sum(
                 len(v) if isinstance(v, dict) else len(list(v)) for v in diff.values()
             )
-            table = _diff_table_html(build_diff_tree(diff), tag_map)
+            msg_tag_map = {**a_entry.get("tag_map", {}), **b_entry.get("tag_map", {})}
+            table = _diff_table_html(build_diff_tree(diff), msg_tag_map)
             sections.append(
                 f'<h3>{header} — {n_changes} change(s)</h3>'
                 f'<p style="font-size:0.85em;color:#555">'
@@ -124,7 +126,7 @@ def _build_html_report(name_a: str, name_b: str, pairs: list, diffs: list, tag_m
 </html>"""
 
 
-def _build_txt_report(name_a: str, name_b: str, pairs: list, diffs: list, tag_map: dict | None = None) -> str:
+def _build_txt_report(name_a: str, name_b: str, pairs: list, diffs: list) -> str:
     """Build a plain-text report of all diffs."""
     from datetime import date
     COL = {"Field": 120, "Tag": 20, "Change": 16, "Old value": 30, "New value": 30}
@@ -160,7 +162,8 @@ def _build_txt_report(name_a: str, name_b: str, pairs: list, diffs: list, tag_ma
                 len(v) if isinstance(v, dict) else len(list(v)) for v in diff.values()
             )
             lines.append(f"  {n_changes} change(s)")
-            rows = flatten_diff_tree(build_diff_tree(diff), tag_map=tag_map)
+            msg_tag_map = {**a_entry.get("tag_map", {}), **b_entry.get("tag_map", {})}
+            rows = flatten_diff_tree(build_diff_tree(diff), tag_map=msg_tag_map)
             if rows:
                 header = _fmt_row({"Field": "Field", "Tag": "Tag", "Change": "Change",
                                    "Old value": "Old value", "New value": "New value"})
@@ -253,6 +256,7 @@ with st.sidebar:
 
 
 
+
 # ── File upload ──────────────────────────────────────────────────────────────
 col_a, col_b = st.columns(2)
 with col_a:
@@ -272,13 +276,11 @@ if not upload_a or not upload_b:
 bytes_a = upload_a.getvalue()
 bytes_b = upload_b.getvalue()
 try:
-    a_msgs = extract_all_msgs(xml_to_dict_bytes(bytes_a))
-    b_msgs = extract_all_msgs(xml_to_dict_bytes(bytes_b))
+    a_msgs = extract_all_msgs(xml_to_dict_bytes(bytes_a), raw_data=xml_to_raw_dict_bytes(bytes_a))
+    b_msgs = extract_all_msgs(xml_to_dict_bytes(bytes_b), raw_data=xml_to_raw_dict_bytes(bytes_b))
 except Exception as exc:
     st.error(f"Failed to parse files: {exc}")
     st.stop()
-
-tag_map = {**xml_to_tag_map(bytes_a), **xml_to_tag_map(bytes_b)}
 
 exclude_paths = get_exclude_paths(extra_excludes)
 
@@ -308,7 +310,7 @@ m3.metric("Identical", n_identical)
 
 tab_html, tab_txt, tab_raw = st.tabs(["⬇ HTML report", "⬇ TXT report", "⬇ Raw report"])
 with tab_html:
-    rdata = _build_html_report(upload_a.name, upload_b.name, pairs, diffs, tag_map).encode("utf-8")
+    rdata = _build_html_report(upload_a.name, upload_b.name, pairs, diffs).encode("utf-8")
     st.download_button(
         label="Download HTML report",
         data=rdata,
@@ -316,7 +318,7 @@ with tab_html:
         mime="text/html",
     )
 with tab_txt:
-    rdata = _build_txt_report(upload_a.name, upload_b.name, pairs, diffs, tag_map).encode("utf-8")
+    rdata = _build_txt_report(upload_a.name, upload_b.name, pairs, diffs).encode("utf-8")
     st.download_button(
         label="Download TXT report",
         data=rdata,
@@ -356,4 +358,5 @@ for i, ((a_entry, b_entry), diff) in enumerate(zip(pairs, diffs)):
             c1.caption(f"**A:** {a_entry['label']}")
             c2.caption(f"**B:** {b_entry['label']}")
             diff_tree = build_diff_tree(diff)
-            render_diff_as_table(diff_tree, tag_map)
+            msg_tag_map = {**a_entry.get("tag_map", {}), **b_entry.get("tag_map", {})}
+            render_diff_as_table(diff_tree, msg_tag_map)

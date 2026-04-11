@@ -68,6 +68,11 @@ def xml_to_dict_bytes(data: bytes) -> dict:
     return apply_field_transforms(xmltodict.parse(data, dict_constructor=dict))
 
 
+def xml_to_raw_dict_bytes(data: bytes) -> dict:
+    """Parse bytes to dict without applying field transforms (preserves @ID attributes)."""
+    return xmltodict.parse(data, dict_constructor=dict)
+
+
 def _extract_tags_recursive(node: object, tag_map: dict) -> None:
     if isinstance(node, dict):
         if "@ID" in node:
@@ -89,17 +94,26 @@ def xml_to_tag_map(data: bytes) -> dict:
     return tag_map
 
 
-def extract_all_msgs(data: dict) -> list[dict]:
+def extract_all_msgs(data: dict, raw_data: dict | None = None) -> list[dict]:
     online_messages = data["EMVCoL3OnlineMessageFormat"]["OnlineMessageList"]["OnlineMessage"]
     if isinstance(online_messages, dict):
         online_messages = [online_messages]
+
+    raw_messages: list | None = None
+    if raw_data:
+        raw_om = raw_data["EMVCoL3OnlineMessageFormat"]["OnlineMessageList"]["OnlineMessage"]
+        raw_messages = [raw_om] if isinstance(raw_om, dict) else raw_om
+
     result = []
-    for om in online_messages:
+    for i, om in enumerate(online_messages):
         label = f"{om.get('@Class', '?')} ({om.get('@Source', '?')} -> {om.get('@Destination', '?')})"
         field_list = om.get("FieldList") or {}
         msg = field_list.get("Message") or (field_list if field_list else None)
         if msg is not None:
-            result.append({"label": label, "msg": msg})
+            tag_map: dict = {}
+            if raw_messages and i < len(raw_messages):
+                _extract_tags_recursive(raw_messages[i], tag_map)
+            result.append({"label": label, "msg": msg, "tag_map": tag_map})
     return result
 
 # ── DeepDiff helpers ─────────────────────────────────────────────────────────
@@ -161,6 +175,7 @@ def flatten_diff_tree(tree: dict, path_prefix: str = "", tag_map: dict | None = 
             if change_type == "values_changed" and isinstance(change_value, dict):
                 rows.append({
                     "Field": path,
+                    "Field ID": raw_tag,
                     "Tag": tag,
                     "Change": label,
                     "Old value": str(change_value.get("old_value", "")),
@@ -168,11 +183,11 @@ def flatten_diff_tree(tree: dict, path_prefix: str = "", tag_map: dict | None = 
                 })
             elif change_type in ("dictionary_item_removed", "iterable_item_removed"):
                 old_val = "—" if isinstance(change_value, dict) else str(change_value)
-                rows.append({"Field": path, "Tag": tag, "Change": label,
+                rows.append({"Field": path, "Field ID": raw_tag, "Tag": tag, "Change": label,
                              "Old value": old_val, "New value": "—"})
             else:
                 new_val = "—" if isinstance(change_value, dict) else str(change_value)
-                rows.append({"Field": path, "Tag": tag, "Change": label,
+                rows.append({"Field": path, "Field ID": raw_tag, "Tag": tag, "Change": label,
                              "Old value": "—", "New value": new_val})
         elif isinstance(value, dict):
             rows.extend(flatten_diff_tree(value, path, tag_map))

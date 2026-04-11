@@ -2,3 +2,5 @@ Message Sequence Number
 Master Key Version
 Terminal Capabilities
 Key Load Number
+Systems Trace Audit Number
+MAC
