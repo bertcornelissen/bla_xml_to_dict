@@ -17,23 +17,30 @@ def render_diff_tree(tree, rich_tree):
         if isinstance(value, dict) and "type" in value:
             change_type = value['type']
             change_value = value['value']
-            
-            # Format based on change type
-            _val = "" if isinstance(change_value, dict) else f": {change_value}"
-            if change_type == 'values_changed':
-                label = f"[yellow]Changed[/yellow] {key}: {change_value}"
-            elif change_type == 'dictionary_item_added':
-                label = f"[green]Added[/green] {key}{_val}"
-            elif change_type == 'dictionary_item_removed':
-                label = f"[red]Removed[/red] {key}{_val}"
-            elif change_type == 'iterable_item_added':
-                label = f"[green]Added (list)[/green] {key}{_val}"
-            elif change_type == 'iterable_item_removed':
-                label = f"[red]Removed (list)[/red] {key}{_val}"
+
+            if change_type in ('dictionary_item_removed', 'iterable_item_removed') and isinstance(change_value, dict):
+                branch = rich_tree.add(f"[red]Removed[/red] {key}")
+                render_diff_tree({k: {"type": change_type, "value": v} for k, v in change_value.items()}, branch)
+            elif change_type in ('dictionary_item_added', 'iterable_item_added') and isinstance(change_value, dict):
+                branch = rich_tree.add(f"[green]Added[/green] {key}")
+                render_diff_tree({k: {"type": change_type, "value": v} for k, v in change_value.items()}, branch)
             else:
-                label = f"[{change_type}] {key}{_val}"
-            
-            rich_tree.add(label)
+                # Format based on change type
+                _val = "" if isinstance(change_value, dict) else f": {change_value}"
+                if change_type == 'values_changed':
+                    label = f"[yellow]Differs[/yellow] {key}: {change_value}"
+                elif change_type == 'dictionary_item_added':
+                    label = f"[green]Added[/green] {key}{_val}"
+                elif change_type == 'dictionary_item_removed':
+                    label = f"[red]Removed[/red] {key}{_val}"
+                elif change_type == 'iterable_item_added':
+                    label = f"[green]Added (list)[/green] {key}{_val}"
+                elif change_type == 'iterable_item_removed':
+                    label = f"[red]Removed (list)[/red] {key}{_val}"
+                else:
+                    label = f"[{change_type}] {key}{_val}"
+
+                rich_tree.add(label)
         elif isinstance(value, dict):
             branch = rich_tree.add(str(key))
             render_diff_tree(value, branch)

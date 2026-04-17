@@ -12,7 +12,7 @@ from deepdiff import DeepDiff
 TABLE_RECORD_NAME = "Table Record"
 
 CHANGE_LABELS: dict[str, str] = {
-    "values_changed":          "Changed",
+    "values_changed":          "Differs",
     "dictionary_item_added":   "Added",
     "dictionary_item_removed": "Removed",
     "iterable_item_added":     "Added (list)",
@@ -161,6 +161,32 @@ def build_diff_tree(diff) -> dict:
     return diff_tree
 
 
+def _expand_value_as_rows(
+    path: str,
+    value: dict,
+    change_type: str,
+    tag_map: dict | None,
+) -> list[dict]:
+    """Recursively expand an added/removed dict value into individual field rows."""
+    rows: list[dict] = []
+    label = CHANGE_LABELS.get(change_type, change_type)
+    is_removed = change_type in ("dictionary_item_removed", "iterable_item_removed")
+    for k, v in value.items():
+        sub_path = f"{path} › {k}"
+        raw_tag = tag_map.get(k, "") if tag_map else ""
+        tag = raw_tag.rsplit(".", 1)[-1] if raw_tag else ""
+        if isinstance(v, dict):
+            rows.extend(_expand_value_as_rows(sub_path, v, change_type, tag_map))
+        else:
+            if is_removed:
+                rows.append({"Field": sub_path, "Field ID": raw_tag, "Tag": tag, "Change": label,
+                             "File 1": str(v), "File 2": "—"})
+            else:
+                rows.append({"Field": sub_path, "Field ID": raw_tag, "Tag": tag, "Change": label,
+                             "File 1": "—", "File 2": str(v)})
+    return rows
+
+
 def flatten_diff_tree(tree: dict, path_prefix: str = "", tag_map: dict | None = None) -> list[dict]:
     """Flatten the nested diff-tree into a list of table rows."""
     rows: list[dict] = []
@@ -178,17 +204,25 @@ def flatten_diff_tree(tree: dict, path_prefix: str = "", tag_map: dict | None = 
                     "Field ID": raw_tag,
                     "Tag": tag,
                     "Change": label,
-                    "Old value": str(change_value.get("old_value", "")),
-                    "New value": str(change_value.get("new_value", "")),
+                    "File 1": str(change_value.get("old_value", "")),
+                    "File 2": str(change_value.get("new_value", "")),
                 })
             elif change_type in ("dictionary_item_removed", "iterable_item_removed"):
-                old_val = "—" if isinstance(change_value, dict) else str(change_value)
-                rows.append({"Field": path, "Field ID": raw_tag, "Tag": tag, "Change": label,
-                             "Old value": old_val, "New value": "—"})
+                if isinstance(change_value, dict):
+                    rows.extend(_expand_value_as_rows(path, change_value, change_type, tag_map))
+                else:
+                    rows.append({"Field": path, "Field ID": raw_tag, "Tag": tag, "Change": label,
+                                 "File 1": str(change_value), "File 2": "—"})
+            elif change_type in ("dictionary_item_added", "iterable_item_added"):
+                if isinstance(change_value, dict):
+                    rows.extend(_expand_value_as_rows(path, change_value, change_type, tag_map))
+                else:
+                    rows.append({"Field": path, "Field ID": raw_tag, "Tag": tag, "Change": label,
+                                 "File 1": "—", "File 2": str(change_value)})
             else:
                 new_val = "—" if isinstance(change_value, dict) else str(change_value)
                 rows.append({"Field": path, "Field ID": raw_tag, "Tag": tag, "Change": label,
-                             "Old value": "—", "New value": new_val})
+                             "File 1": "—", "File 2": new_val})
         elif isinstance(value, dict):
             rows.extend(flatten_diff_tree(value, path, tag_map))
     return rows
@@ -198,7 +232,7 @@ def format_change_label(change_type: str, key: str, change_value) -> str:
     """Return a plain-text label for a single diff node (used by CLI and raw report)."""
     _val = "" if isinstance(change_value, dict) else f": {change_value}"
     if change_type == "values_changed":
-        return f"Changed {key}: {change_value}"
+        return f"Differs {key}: {change_value}"
     if change_type == "dictionary_item_added":
         return f"Added {key}{_val}"
     if change_type == "dictionary_item_removed":
