@@ -3,4 +3,5 @@ Master Key Version
 Terminal Capabilities
 Key Load Number
 Systems Trace Audit Number
+Security Scheme TSC Identifier
 MAC
